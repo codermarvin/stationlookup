@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:stationlookup/pages/login.dart';
 
 void main() {
   runApp(MyApp());
@@ -29,6 +30,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold();
+    return Scaffold(
+      body: Login(), // Login page
+    );
   }
 }
