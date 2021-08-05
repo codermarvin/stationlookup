@@ -1,3 +1,7 @@
+// Flutter Technical Examination
+// Marvin Aquino
+// August 6, 2021
+
 import 'package:flutter/material.dart';
 import 'package:stationlookup/pages/login.dart';
 

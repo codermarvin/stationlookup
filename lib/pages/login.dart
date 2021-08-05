@@ -1,3 +1,7 @@
+// Flutter Technical Examination
+// Marvin Aquino
+// August 6, 2021
+
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -20,8 +24,6 @@ class _LoginState extends State<Login> {
   @override
   void initState() {
     super.initState();
-    _controllerMobile.text = '09021234567';
-    _controllerPassword.text = '123456';
   }
 
   @override

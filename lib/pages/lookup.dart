@@ -1,3 +1,7 @@
+// Flutter Technical Examination
+// Marvin Aquino
+// August 6, 2021
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -16,14 +20,20 @@ class Lookup extends StatefulWidget {
 
 class _LookupState extends State<Lookup> {
   final _gKey = new GlobalKey<ScaffoldState>();
-  int _groupValue = 0;
+
+  bool _showDetail = false;
+  bool _doSearch = false;
+
+  final TextEditingController _filter = new TextEditingController();
+  String _searchText = '';
+  List<dynamic> stations = []; // stations we get from API
+  List<dynamic> filteredStations = []; // stations filtered by search text
+  int _stationIndex = 0;
 
   late GoogleMapController _mapController;
-  late LatLng _userLocation;
-
-  bool stationDetail = false;
-  bool startSearch = false;
-  var _search = TextEditingController();
+  LatLng _userLocation = LatLng(0.0, 0.0);
+  LatLng _stationLocation = LatLng(0.0, 0.0);
+  double _zoomLevel = 15.0;
 
   Future<Position> _getLocation() async {
     var currentLocation;
@@ -42,8 +52,8 @@ class _LookupState extends State<Lookup> {
         _mapController.animateCamera(
           CameraUpdate.newCameraPosition(
             CameraPosition(
-              target: _userLocation,
-              zoom: 15,
+              target: _showDetail ? _stationLocation : _userLocation,
+              zoom: _zoomLevel,
             ),
           ),
         );
@@ -51,22 +61,59 @@ class _LookupState extends State<Lookup> {
     );
   }
 
+  Set<Marker> _createMarker() {
+    return {
+      Marker(
+        position: _stationLocation,
+        markerId: MarkerId(_stationIndex.toString()),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet),
+      ),
+    };
+  }
+
   void displayBottomSheet() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    var accessToken = prefs.getString('token');
-    String url = 'https://stable-api.pricelocq.com/mobile/stations?all';
-    Map<String, String> header = new Map();
-    header["authorization"] = "$accessToken";
-    var response = await http.get(Uri.parse(url), headers: header);
-    Map<String, dynamic> map = json.decode(response.body);
-    List<dynamic> _stations = map['data'];
+    if (stations.length == 0) {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      var accessToken = prefs.getString('token');
+      String url = 'https://stable-api.pricelocq.com/mobile/stations?all';
+      Map<String, String> header = new Map();
+      header["authorization"] = "$accessToken";
+      var response = await http.get(Uri.parse(url), headers: header);
+      Map<String, dynamic> map = json.decode(response.body);
+      stations = map['data']; // stations we get from API
+      stations
+        ..sort((a, b) => (Geolocator.distanceBetween(
+                    _userLocation.latitude,
+                    _userLocation.longitude,
+                    double.parse(a['lat']),
+                    double.parse(a['lng'])) ~/
+                1000)
+            .compareTo(Geolocator.distanceBetween(
+                    _userLocation.latitude,
+                    _userLocation.longitude,
+                    double.parse(b['lat']),
+                    double.parse(b['lng'])) ~/
+                1000));
+      filteredStations = stations; // stations filtered by search text
+    }
+    if (_searchText.isNotEmpty) {
+      List<dynamic> tempList = [];
+      for (int i = 0; i < filteredStations.length; i++) {
+        if (filteredStations[i]['name']
+            .toLowerCase()
+            .contains(_searchText.toLowerCase())) {
+          tempList.add(filteredStations[i]);
+        }
+      }
+      filteredStations = tempList;
+    }
     _gKey.currentState?.showBottomSheet(
       (context) {
-        return stationDetail && !startSearch
+        return _showDetail && !_doSearch
             ? Container(
-                height: 200,
+                height: MediaQuery.of(context).size.height * 0.25,
                 width: double.infinity,
-                padding: EdgeInsets.only(left: 20.0, top: 10.0, right: 20.0),
+                padding: EdgeInsets.only(left: 16.0, right: 16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
@@ -76,28 +123,47 @@ class _LookupState extends State<Lookup> {
                         TextButton(
                           onPressed: () {
                             setState(() {
-                              stationDetail = false;
+                              _filter.clear();
+                              _searchText = '';
+                              filteredStations = stations;
+                              _doSearch = false;
+                              _showDetail = false;
                             });
                           },
-                          child: Text('Back to list'),
+                          child: Text(
+                            'Back to list',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
                         TextButton(
-                          onPressed: () {},
-                          child: Text('Done'),
+                          onPressed: () {
+                            setState(() {
+                              _filter.clear();
+                              _searchText = '';
+                              filteredStations = stations;
+                              _doSearch = false;
+                              _showDetail = false;
+                            });
+                          },
+                          child: Text(
+                            'Done',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ],
                     ),
                     Container(
-                      padding: EdgeInsets.only(left: 8.0, right: 8.0),
+                      padding: EdgeInsets.all(8.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: <Widget>[
                           Text(
-                            'Name',
+                            filteredStations[_stationIndex]['name'],
                             style: TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          Text('Address 1'),
-                          Text('Address 2'),
+                          Text(
+                            filteredStations[_stationIndex]['address'],
+                          ),
                           Text(''),
                           Row(
                             children: <Widget>[
@@ -105,7 +171,8 @@ class _LookupState extends State<Lookup> {
                               Padding(
                                 padding:
                                     EdgeInsets.only(left: 5.0, right: 20.0),
-                                child: Text('1 km away'),
+                                child: Text(
+                                    '${Geolocator.distanceBetween(_userLocation.latitude, _userLocation.longitude, double.parse(filteredStations[_stationIndex]['lat']), double.parse(filteredStations[_stationIndex]['lng'])) ~/ 1000} km away'),
                               ),
                               Icon(Icons.access_time),
                               Padding(
@@ -121,25 +188,27 @@ class _LookupState extends State<Lookup> {
                 ),
               )
             : Container(
-                height: startSearch ? 600 : 300,
+                height: MediaQuery.of(context).size.height *
+                    (_doSearch ? 1.0 : 0.4),
                 padding: EdgeInsets.only(left: 8.0, right: 8.0),
                 width: double.infinity,
                 alignment: Alignment.center,
                 child: Column(
                   children: <Widget>[
-                    startSearch
+                    _doSearch
                         ? SizedBox.shrink()
                         : Container(
+                            padding: EdgeInsets.all(16.0),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: <Widget>[
-                                TextButton(
-                                  onPressed: () {},
-                                  child: Text('Nearby Stations'),
+                                Text(
+                                  'Nearby Stations',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
-                                TextButton(
-                                  onPressed: () {},
-                                  child: Text('Done'),
+                                Text(
+                                  'Done',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
                               ],
                             ),
@@ -149,26 +218,37 @@ class _LookupState extends State<Lookup> {
                         separatorBuilder: (context, index) {
                           return Divider();
                         },
-                        itemCount: _stations.length,
+                        itemCount: filteredStations.length,
                         itemBuilder: (context, index) {
                           return ListTile(
                             onTap: () {
                               setState(() {
-                                _groupValue = index;
-                                stationDetail = true;
-                                startSearch = false;
+                                _stationIndex = index;
+                                _stationLocation = LatLng(
+                                    double.parse(
+                                        filteredStations[index]['lat']),
+                                    double.parse(
+                                        filteredStations[index]['lng']));
+                                _doSearch = false;
+                                _showDetail = true;
                               });
                             },
-                            title: Text(_stations[index]['name']),
-                            subtitle: Text('1km away from you'),
+                            title: Text(filteredStations[index]['name']),
+                            subtitle: Text(
+                                '${Geolocator.distanceBetween(_userLocation.latitude, _userLocation.longitude, double.parse(filteredStations[index]['lat']), double.parse(filteredStations[index]['lng'])) ~/ 1000} km away from you'),
                             trailing: Radio<int>(
-                              groupValue: _groupValue,
+                              groupValue: _stationIndex,
                               value: index,
                               onChanged: (int? value) {
                                 setState(() {
-                                  _groupValue = index;
-                                  stationDetail = true;
-                                  startSearch = false;
+                                  _stationIndex = index;
+                                  _stationLocation = LatLng(
+                                      double.parse(
+                                          filteredStations[index]['lat']),
+                                      double.parse(
+                                          filteredStations[index]['lng']));
+                                  _doSearch = false;
+                                  _showDetail = true;
                                 });
                               },
                             ),
@@ -199,6 +279,7 @@ class _LookupState extends State<Lookup> {
   @override
   Widget build(BuildContext context) {
     displayBottomSheet();
+    _updateCamera();
 
     return Scaffold(
       key: _gKey,
@@ -207,16 +288,28 @@ class _LookupState extends State<Lookup> {
         centerTitle: true,
         title: Text('Search Station'),
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(startSearch ? 80 : 40),
+          preferredSize: Size.fromHeight(_doSearch ? 80 : 40),
           child: Column(children: <Widget>[
             Text('Which PriceLOCQ station will you likely to visit?',
                 style: TextStyle(color: Colors.white)),
-            startSearch
+            _doSearch
                 ? Container(
                     padding: EdgeInsets.only(
                         left: 50.0, top: 10.0, right: 50.0, bottom: 20.0),
                     child: TextField(
-                      controller: _search,
+                      controller: _filter,
+                      onChanged: (String value) {
+                        if (_filter.text.isEmpty) {
+                          setState(() {
+                            _searchText = '';
+                            filteredStations = stations;
+                          });
+                        } else {
+                          setState(() {
+                            _searchText = _filter.text;
+                          });
+                        }
+                      },
                       decoration: InputDecoration(
                         prefixIcon: Icon(Icons.search),
                         hintText: 'Search',
@@ -232,18 +325,23 @@ class _LookupState extends State<Lookup> {
           IconButton(
             onPressed: () {
               setState(() {
-                startSearch = !startSearch;
+                _filter.clear();
+                _searchText = '';
+                filteredStations = stations;
+                _doSearch = !_doSearch;
+                _showDetail = false;
               });
             },
-            icon: startSearch ? Icon(Icons.close) : Icon(Icons.search),
+            icon: _doSearch ? Icon(Icons.close) : Icon(Icons.search),
           )
         ],
       ),
       body: GoogleMap(
         myLocationEnabled: true,
+        markers: _createMarker(),
         initialCameraPosition: CameraPosition(
-          target: LatLng(0, 0),
-          zoom: 15,
+          target: _userLocation,
+          zoom: _zoomLevel,
         ),
         onMapCreated: (controller) async {
           setState(() {
