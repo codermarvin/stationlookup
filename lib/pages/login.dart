@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'landing.dart';
+import 'lookup.dart';
 
 class Login extends StatefulWidget {
   const Login({Key? key}) : super(key: key);
@@ -20,6 +20,8 @@ class _LoginState extends State<Login> {
   @override
   void initState() {
     super.initState();
+    _controllerMobile.text = '09021234567';
+    _controllerPassword.text = '123456';
   }
 
   @override
@@ -32,31 +34,40 @@ class _LoginState extends State<Login> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          TextField(
-            controller: _controllerMobile,
-            keyboardType: TextInputType.phone,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(),
-              labelText: 'Mobile Number',
+      body: Container(
+        padding: EdgeInsets.all(50.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            TextField(
+              controller: _controllerMobile,
+              keyboardType: TextInputType.phone,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'Mobile Number',
+              ),
             ),
-          ),
-          TextField(
-            controller: _controllerPassword,
-            obscureText: true,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(),
-              labelText: 'Password',
+            Padding(padding: EdgeInsets.only(top: 8.0)),
+            TextField(
+              controller: _controllerPassword,
+              obscureText: true,
+              decoration: InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'Password',
+              ),
             ),
-          ),
-          ElevatedButton(
-              onPressed: () {
-                authenticate(_controllerMobile.text, _controllerPassword.text);
-              },
-              child: Text('Log In')),
-        ],
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  authenticate(
+                      _controllerMobile.text, _controllerPassword.text);
+                },
+                child: Text('Log In'),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -73,7 +84,7 @@ class _LoginState extends State<Login> {
           'token', jsonResponse['data']['accessToken']); // Save token
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => Landing()),
+        MaterialPageRoute(builder: (context) => Lookup()),
       );
     }
   }
