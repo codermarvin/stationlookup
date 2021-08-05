@@ -78,15 +78,25 @@ class _LoginState extends State<Login> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String url = 'https://stable-api.pricelocq.com/mobile/v2/sessions';
     var data = {'mobile': mobile, 'password': password};
-    var response = await http.post(Uri.parse(url), body: json.encode(data));
-    if (response.statusCode == 200) {
-      // Success
-      var jsonResponse = json.decode(response.body);
-      prefs.setString(
-          'token', jsonResponse['data']['accessToken']); // Save token
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => Lookup()),
+    try {
+      var response = await http.post(Uri.parse(url), body: json.encode(data));
+      if (response.statusCode == 200) {
+        // Success
+        var jsonResponse = json.decode(response.body);
+        prefs.setString(
+            'token', jsonResponse['data']['accessToken']); // Save token
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => Lookup()),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red,
+          content:
+              Text('The mobile number or password you entered is incorrect.'),
+        ),
       );
     }
   }
