@@ -47,16 +47,18 @@ class _LookupState extends State<Lookup> {
   }
 
   Future<void> _updateCamera() async {
-    await Future.delayed(Duration(seconds: 2)).then((_) {
-      _mapController.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: _showDetail ? _stationLocation : _userLocation,
-            zoom: _zoomLevel,
+    await Future.delayed(Duration(seconds: 2)).then(
+      (_) {
+        _mapController.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: _showDetail ? _stationLocation : _userLocation,
+              zoom: _zoomLevel,
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
   }
 
   Set<Marker> _createMarker() {
