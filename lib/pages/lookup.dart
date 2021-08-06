@@ -47,18 +47,16 @@ class _LookupState extends State<Lookup> {
   }
 
   Future<void> _updateCamera() async {
-    await Future.delayed(Duration(seconds: 2)).then(
-      (_) {
-        _mapController.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: _showDetail ? _stationLocation : _userLocation,
-              zoom: _zoomLevel,
-            ),
+    await Future.delayed(Duration(seconds: 2)).then((_) {
+      _mapController.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: _showDetail ? _stationLocation : _userLocation,
+            zoom: _zoomLevel,
           ),
-        );
-      },
-    );
+        ),
+      );
+    });
   }
 
   Set<Marker> _createMarker() {
@@ -109,7 +107,7 @@ class _LookupState extends State<Lookup> {
     }
     _gKey.currentState?.showBottomSheet(
       (context) {
-        return _showDetail && !_doSearch
+        return _showDetail
             ? Container(
                 height: MediaQuery.of(context).size.height * 0.25,
                 width: double.infinity,
@@ -123,10 +121,6 @@ class _LookupState extends State<Lookup> {
                         TextButton(
                           onPressed: () {
                             setState(() {
-                              _filter.clear();
-                              _searchText = '';
-                              filteredStations = stations;
-                              _doSearch = false;
                               _showDetail = false;
                             });
                           },
@@ -141,6 +135,7 @@ class _LookupState extends State<Lookup> {
                               _filter.clear();
                               _searchText = '';
                               filteredStations = stations;
+                              _stationIndex = 0;
                               _doSearch = false;
                               _showDetail = false;
                             });
@@ -222,16 +217,17 @@ class _LookupState extends State<Lookup> {
                         itemBuilder: (context, index) {
                           return ListTile(
                             onTap: () {
-                              setState(() {
-                                _stationIndex = index;
-                                _stationLocation = LatLng(
-                                    double.parse(
-                                        filteredStations[index]['lat']),
-                                    double.parse(
-                                        filteredStations[index]['lng']));
-                                _doSearch = false;
-                                _showDetail = true;
-                              });
+                              setState(
+                                () {
+                                  _stationIndex = index;
+                                  _stationLocation = LatLng(
+                                      double.parse(
+                                          filteredStations[index]['lat']),
+                                      double.parse(
+                                          filteredStations[index]['lng']));
+                                  _showDetail = true;
+                                },
+                              );
                             },
                             title: Text(filteredStations[index]['name']),
                             subtitle: Text(
@@ -240,16 +236,18 @@ class _LookupState extends State<Lookup> {
                               groupValue: _stationIndex,
                               value: index,
                               onChanged: (int? value) {
-                                setState(() {
-                                  _stationIndex = index;
-                                  _stationLocation = LatLng(
+                                setState(
+                                  () {
+                                    _stationIndex = index;
+                                    _stationLocation = LatLng(
                                       double.parse(
                                           filteredStations[index]['lat']),
                                       double.parse(
-                                          filteredStations[index]['lng']));
-                                  _doSearch = false;
-                                  _showDetail = true;
-                                });
+                                          filteredStations[index]['lng']),
+                                    );
+                                    _showDetail = true;
+                                  },
+                                );
                               },
                             ),
                           );
@@ -328,6 +326,7 @@ class _LookupState extends State<Lookup> {
                 _filter.clear();
                 _searchText = '';
                 filteredStations = stations;
+                _stationIndex = 0;
                 _doSearch = !_doSearch;
                 _showDetail = false;
               });
