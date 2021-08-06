@@ -31,6 +31,7 @@ class _LookupState extends State<Lookup> {
   int _stationIndex = 0;
 
   late GoogleMapController _mapController;
+  bool _showGoogleMap = false;
   LatLng _userLocation = LatLng(0.0, 0.0);
   LatLng _stationLocation = LatLng(0.0, 0.0);
   double _zoomLevel = 15.0;
@@ -47,17 +48,13 @@ class _LookupState extends State<Lookup> {
   }
 
   Future<void> _updateCamera() async {
-    await Future.delayed(Duration(seconds: 2)).then(
-      (_) {
-        _mapController.animateCamera(
-          CameraUpdate.newCameraPosition(
-            CameraPosition(
-              target: _showDetail ? _stationLocation : _userLocation,
-              zoom: _zoomLevel,
-            ),
-          ),
-        );
-      },
+    await _mapController.animateCamera(
+      CameraUpdate.newCameraPosition(
+        CameraPosition(
+          target: _showDetail ? _stationLocation : _userLocation,
+          zoom: _zoomLevel,
+        ),
+      ),
     );
   }
 
@@ -266,6 +263,13 @@ class _LookupState extends State<Lookup> {
   @override
   void initState() {
     super.initState();
+    Future.delayed(Duration(seconds: 2)).then(
+      (_) {
+        setState(() {
+          _showGoogleMap = true;
+        });
+      },
+    );
     _getLocation().then((position) {
       _userLocation = LatLng(position.latitude, position.longitude);
     });
@@ -337,20 +341,24 @@ class _LookupState extends State<Lookup> {
           )
         ],
       ),
-      body: GoogleMap(
-        myLocationEnabled: true,
-        markers: _createMarker(),
-        initialCameraPosition: CameraPosition(
-          target: _userLocation,
-          zoom: _zoomLevel,
-        ),
-        onMapCreated: (controller) async {
-          setState(() {
-            _mapController = controller;
-          });
-          _updateCamera();
-        },
-      ),
+      body: !_showGoogleMap
+          ? Center(
+              child: CircularProgressIndicator(),
+            )
+          : GoogleMap(
+              myLocationEnabled: true,
+              markers: _createMarker(),
+              initialCameraPosition: CameraPosition(
+                target: _userLocation,
+                zoom: _zoomLevel,
+              ),
+              onMapCreated: (controller) async {
+                setState(() {
+                  _mapController = controller;
+                });
+                _updateCamera();
+              },
+            ),
     );
   }
 }
