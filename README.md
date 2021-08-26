@@ -1,6 +1,6 @@
 # stationlookup
 
-A new Flutter project.
+A new Flutter project part of technical exam for SEAOIL.
 
 ## Getting Started
 
